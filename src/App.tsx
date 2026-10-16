@@ -6,21 +6,13 @@ import ChatPanel from "./components/ChatPanel";
 import ProfileSettings from "./components/ProfileSettings";
 import type { ChatMessage } from "./components/Message";
 import { defaultUser, type UserProfile } from "./types/User";
+import { initialCommunities } from "./data/communities";
+import type { Community } from "./types/Community";
 import "./App.css";
 
 type Theme = "light" | "dark";
 
-type Channel = {
-  id: string;
-  name: string;
-};
-
-const channels: Channel[] = [
-  { id: "general", name: "general" },
-  { id: "projects", name: "projects" },
-  { id: "random", name: "random" },
-];
-
+// Temporary messages for testing the application.
 const initialMessages: ChatMessage[] = [
   {
     id: "1",
@@ -107,8 +99,19 @@ function App() {
   // Profile settings visibility
   const [isProfileOpen, setIsProfileOpen] = useState(false);
 
-  // Channel and message states
-  const [activeChannel, setActiveChannel] = useState("general");
+  // Community state
+  const [communities] =
+    useState<Community[]>(initialCommunities);
+
+  // Currently selected community
+  const [activeCommunityId, setActiveCommunityId] =
+    useState("my-space");
+
+  // Currently selected text channel
+  const [activeChannel, setActiveChannel] =
+    useState("general");
+
+  // Message state
   const [messages, setMessages] =
     useState<ChatMessage[]>(initialMessages);
 
@@ -118,6 +121,7 @@ function App() {
     localStorage.setItem("nook-theme", theme);
   }, [theme]);
 
+  // Toggle light and dark mode
   const toggleTheme = () => {
     setTheme((current) =>
       current === "light" ? "dark" : "light"
@@ -134,8 +138,39 @@ function App() {
     );
   };
 
+  // Find the currently selected community
+  const activeCommunity =
+    communities.find(
+      (community) => community.id === activeCommunityId
+    ) ?? communities[0];
+
+  // Switch community and select its first text channel
+  const handleCommunitySelect = (communityId: string) => {
+    const selectedCommunity = communities.find(
+      (community) => community.id === communityId
+    );
+
+    if (!selectedCommunity) return;
+
+    setActiveCommunityId(communityId);
+
+    const firstTextChannel = selectedCommunity.channels.find(
+      (channel) => channel.type === "text"
+    );
+
+    setActiveChannel(firstTextChannel?.id ?? "");
+  };
+
+  // Find the selected channel's display name
+  const activeChannelName =
+    activeCommunity.channels.find(
+      (channel) => channel.id === activeChannel
+    )?.name ?? "";
+
   // Add a new message
   const handleSendMessage = (content: string) => {
+    if (!activeChannelName) return;
+
     const newMessage: ChatMessage = {
       id: crypto.randomUUID(),
       channelId: activeChannel,
@@ -181,7 +216,7 @@ function App() {
     );
   };
 
-  // Filter messages by active channel
+  // Filter messages by selected channel
   const filteredMessages = messages.filter(
     (message) => message.channelId === activeChannel
   );
@@ -191,10 +226,13 @@ function App() {
       <CommunitySidebar
         theme={theme}
         onToggleTheme={toggleTheme}
+        communities={communities}
+        activeCommunityId={activeCommunityId}
+        onCommunitySelect={handleCommunitySelect}
       />
 
       <ChannelSidebar
-        channels={channels}
+        community={activeCommunity}
         activeChannel={activeChannel}
         onChannelSelect={setActiveChannel}
         user={user}
@@ -202,7 +240,7 @@ function App() {
       />
 
       <ChatPanel
-        activeChannel={activeChannel}
+        activeChannel={activeChannelName}
         messages={filteredMessages}
         onSendMessage={handleSendMessage}
         onEditMessage={handleEditMessage}

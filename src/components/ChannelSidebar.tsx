@@ -1,13 +1,9 @@
 
+import type { Community } from "../types/Community";
 import type { UserProfile } from "../types/User";
 
-type Channel = {
-  id: string;
-  name: string;
-};
-
 type ChannelSidebarProps = {
-  channels: Channel[];
+  community: Community;
   activeChannel: string;
   onChannelSelect: (channelId: string) => void;
   user: UserProfile;
@@ -15,17 +11,25 @@ type ChannelSidebarProps = {
 };
 
 function ChannelSidebar({
-  channels,
+  community,
   activeChannel,
   onChannelSelect,
   user,
   onOpenProfile,
 }: ChannelSidebarProps) {
+  const textChannels = community.channels.filter(
+    (channel) => channel.type === "text"
+  );
+
+  const voiceChannels = community.channels.filter(
+    (channel) => channel.type === "voice"
+  );
+
   return (
     <aside className="channel-sidebar">
-      {/* Workspace header */}
+      {/* Community name */}
       <div className="workspace-title">
-        <h2>My Space</h2>
+        <h2>{community.name}</h2>
         <span>⌄</span>
       </div>
 
@@ -33,9 +37,10 @@ function ChannelSidebar({
       <div className="channel-group">
         <p className="group-label">TEXT CHANNELS</p>
 
-        {channels.map((channel) => (
+        {textChannels.map((channel) => (
           <button
             key={channel.id}
+            type="button"
             className={`channel-item ${
               activeChannel === channel.id ? "selected" : ""
             }`}
@@ -48,14 +53,24 @@ function ChannelSidebar({
       </div>
 
       {/* Voice channels */}
-      <div className="channel-group">
-        <p className="group-label">VOICE CHANNELS</p>
+      {voiceChannels.length > 0 && (
+        <div className="channel-group">
+          <p className="group-label">VOICE CHANNELS</p>
 
-        <button className="channel-item" type="button">
-          <span>◉</span>
-          Lounge
-        </button>
-      </div>
+          {voiceChannels.map((channel) => (
+            <button
+              key={channel.id}
+              type="button"
+              className="channel-item"
+              disabled
+              title="Voice channels are coming later"
+            >
+              <span>◉</span>
+              {channel.name}
+            </button>
+          ))}
+        </div>
+      )}
 
       <div className="sidebar-spacer" />
 
