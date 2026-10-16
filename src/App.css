@@ -454,3 +454,200 @@
     scroll-behavior: auto;
   }
 }
+
+
+/* Current user button */
+.current-user {
+  width: 100%;
+  background: transparent;
+  border: 0;
+  color: var(--text);
+  text-align: left;
+  cursor: pointer;
+  border-radius: 12px;
+}
+
+.current-user:hover {
+  background: var(--message);
+}
+
+.current-user-details {
+  min-width: 0;
+}
+
+.current-user-details strong {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.status-indicator {
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  margin-left: auto;
+  flex-shrink: 0;
+}
+
+.status-online {
+  background: #65b88c;
+}
+
+.status-away {
+  background: #e2b45e;
+}
+
+.status-dnd {
+  background: #dc7a83;
+}
+
+.status-invisible {
+  background: #9b91a3;
+}
+
+/* Profile settings overlay */
+.settings-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 100;
+  background: rgba(15, 10, 20, 0.48);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  padding: 20px;
+}
+
+.settings-panel {
+  width: 100%;
+  max-width: 460px;
+  max-height: 90vh;
+  overflow-y: auto;
+  background: var(--surface);
+  color: var(--text);
+  border: 1px solid var(--border);
+  border-radius: 22px;
+  padding: 28px;
+  box-shadow: 0 20px 70px rgba(0, 0, 0, 0.15);
+}
+
+.settings-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 16px;
+  margin-bottom: 24px;
+}
+
+.settings-header h2 {
+  margin: 0 0 6px;
+  font-size: 22px;
+}
+
+.settings-header p {
+  margin: 0;
+  color: var(--muted);
+  font-size: 13px;
+}
+
+.settings-close {
+  border: 0;
+  background: var(--message);
+  color: var(--text);
+  width: 34px;
+  height: 34px;
+  border-radius: 10px;
+  font-size: 22px;
+}
+
+.settings-form {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.profile-preview {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  padding: 16px;
+  background: var(--message);
+  border-radius: 14px;
+  margin-bottom: 10px;
+}
+
+.profile-avatar {
+  width: 54px;
+  height: 54px;
+  border-radius: 18px;
+  background: #d8b8df;
+  color: #33263a;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 24px;
+  font-weight: 700;
+}
+
+.profile-preview strong,
+.profile-preview small {
+  display: block;
+}
+
+.profile-preview small {
+  margin-top: 5px;
+  color: var(--muted);
+  font-size: 12px;
+}
+
+.settings-form label {
+  font-size: 12px;
+  font-weight: 700;
+}
+
+.settings-form input,
+.settings-form textarea,
+.settings-form select {
+  width: 100%;
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  background: var(--message);
+  color: var(--text);
+  padding: 12px;
+  font: inherit;
+  font-size: 13px;
+}
+
+.settings-form textarea {
+  resize: vertical;
+}
+
+.settings-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 10px;
+  margin-top: 14px;
+}
+
+.settings-actions button {
+  border: 0;
+  border-radius: 10px;
+  padding: 11px 16px;
+  font-size: 13px;
+  font-weight: 600;
+}
+
+.settings-cancel {
+  background: var(--message);
+  color: var(--text);
+}
+
+.settings-save {
+  background: var(--accent);
+  color: #fff;
+}
+
+@media (max-width: 520px) {
+  .settings-panel {
+    padding: 20px;
+  }
+}

@@ -3,7 +3,9 @@ import { useEffect, useState } from "react";
 import CommunitySidebar from "./components/CommunitySidebar";
 import ChannelSidebar from "./components/ChannelSidebar";
 import ChatPanel from "./components/ChatPanel";
+import ProfileSettings from "./components/ProfileSettings";
 import type { ChatMessage } from "./components/Message";
+import { defaultUser, type UserProfile } from "./types/User";
 import "./App.css";
 
 type Theme = "light" | "dark";
@@ -59,14 +61,58 @@ const initialMessages: ChatMessage[] = [
 ];
 
 function App() {
+  // Theme state
   const [theme, setTheme] = useState<Theme>(() => {
     const savedTheme = localStorage.getItem("nook-theme");
     return savedTheme === "dark" ? "dark" : "light";
   });
 
-  const [activeChannel, setActiveChannel] = useState("general");
-  const [messages, setMessages] = useState<ChatMessage[]>(initialMessages);
+  // User profile state
+  const [user, setUser] = useState<UserProfile>(() => {
+    try {
+      const savedUser = localStorage.getItem("nook-user");
 
+      if (savedUser) {
+        const parsedUser: unknown = JSON.parse(savedUser);
+
+        if (
+          typeof parsedUser === "object" &&
+          parsedUser !== null &&
+          "username" in parsedUser &&
+          typeof parsedUser.username === "string" &&
+          parsedUser.username.trim().length > 0 &&
+          "bio" in parsedUser &&
+          typeof parsedUser.bio === "string" &&
+          "status" in parsedUser &&
+          (parsedUser.status === "online" ||
+            parsedUser.status === "away" ||
+            parsedUser.status === "dnd" ||
+            parsedUser.status === "invisible")
+        ) {
+          return {
+            ...defaultUser,
+            username: parsedUser.username,
+            bio: parsedUser.bio,
+            status: parsedUser.status,
+          };
+        }
+      }
+    } catch {
+      // Ignore invalid saved profile data.
+    }
+
+    return defaultUser;
+  });
+
+  // Profile settings visibility
+  const [isProfileOpen, setIsProfileOpen] = useState(false);
+
+  // Channel and message states
+  const [activeChannel, setActiveChannel] = useState("general");
+  const [messages, setMessages] =
+    useState<ChatMessage[]>(initialMessages);
+
+  // Save theme changes
   useEffect(() => {
     document.documentElement.dataset.theme = theme;
     localStorage.setItem("nook-theme", theme);
@@ -78,12 +124,22 @@ function App() {
     );
   };
 
-  // Adds a new message to the currently selected channel.
+  // Save user profile
+  const handleSaveProfile = (updatedUser: UserProfile) => {
+    setUser(updatedUser);
+
+    localStorage.setItem(
+      "nook-user",
+      JSON.stringify(updatedUser)
+    );
+  };
+
+  // Add a new message
   const handleSendMessage = (content: string) => {
     const newMessage: ChatMessage = {
       id: crypto.randomUUID(),
       channelId: activeChannel,
-      username: "Developer",
+      username: user.username,
       content,
       createdAt: new Date().toISOString(),
       avatarColor: "green",
@@ -93,9 +149,13 @@ function App() {
     setMessages((previous) => [...previous, newMessage]);
   };
 
-  // Updates the content of an existing own message.
-  const handleEditMessage = (messageId: string, content: string) => {
+  // Edit an existing own message
+  const handleEditMessage = (
+    messageId: string,
+    content: string
+  ) => {
     const updatedContent = content.trim();
+
     if (!updatedContent) return;
 
     setMessages((previous) =>
@@ -111,7 +171,7 @@ function App() {
     );
   };
 
-  // Removes an own message from the local message list.
+  // Delete an existing own message
   const handleDeleteMessage = (messageId: string) => {
     setMessages((previous) =>
       previous.filter(
@@ -121,6 +181,7 @@ function App() {
     );
   };
 
+  // Filter messages by active channel
   const filteredMessages = messages.filter(
     (message) => message.channelId === activeChannel
   );
@@ -136,6 +197,8 @@ function App() {
         channels={channels}
         activeChannel={activeChannel}
         onChannelSelect={setActiveChannel}
+        user={user}
+        onOpenProfile={() => setIsProfileOpen(true)}
       />
 
       <ChatPanel
@@ -145,6 +208,15 @@ function App() {
         onEditMessage={handleEditMessage}
         onDeleteMessage={handleDeleteMessage}
       />
+
+      {/* Profile settings modal */}
+      {isProfileOpen && (
+        <ProfileSettings
+          user={user}
+          onSave={handleSaveProfile}
+          onClose={() => setIsProfileOpen(false)}
+        />
+      )}
     </div>
   );
 }
