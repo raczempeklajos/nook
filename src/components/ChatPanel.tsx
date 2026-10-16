@@ -1,29 +1,39 @@
 
-import { useState, type FormEvent } from "react";
+import { useEffect, useRef, useState, type FormEvent } from "react";
 import Message, { type ChatMessage } from "./Message";
 
 type ChatPanelProps = {
   activeChannel: string;
   messages: ChatMessage[];
   onSendMessage: (content: string) => void;
+  onEditMessage: (messageId: string, content: string) => void;
+  onDeleteMessage: (messageId: string) => void;
 };
 
 function ChatPanel({
   activeChannel,
   messages,
   onSendMessage,
+  onEditMessage,
+  onDeleteMessage,
 }: ChatPanelProps) {
-  // Stores the text currently typed into the message input.
   const [messageInput, setMessageInput] = useState("");
+  const messagesEndRef = useRef<HTMLDivElement | null>(null);
+
+  // Scrolls to the latest message when the channel or message count changes.
+  useEffect(() => {
+    messagesEndRef.current?.scrollIntoView({
+      behavior: "smooth",
+      block: "end",
+    });
+  }, [activeChannel, messages.length]);
 
   const handleSubmit = (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
 
     const content = messageInput.trim();
 
-    if (!content) {
-      return;
-    }
+    if (!content) return;
 
     onSendMessage(content);
     setMessageInput("");
@@ -45,26 +55,24 @@ function ChatPanel({
       <section className="chat-content">
         <div className="welcome-message">
           <div className="welcome-icon">#</div>
-
           <h1>Welcome to #{activeChannel}</h1>
-
-          <p>
-            This is the beginning of your conversation.
-          </p>
+          <p>This is the beginning of your conversation.</p>
         </div>
 
-        {/* Render messages belonging to the active channel. */}
         {messages.map((message) => (
-          <Message key={message.id} message={message} />
+          <Message
+            key={message.id}
+            message={message}
+            onEdit={onEditMessage}
+            onDelete={onDeleteMessage}
+          />
         ))}
+
+        <div ref={messagesEndRef} />
       </section>
 
-      {/* Message input form */}
       <div className="composer-container">
-        <form
-          className="message-composer"
-          onSubmit={handleSubmit}
-        >
+        <form className="message-composer" onSubmit={handleSubmit}>
           <span className="composer-plus">+</span>
 
           <input
@@ -72,9 +80,7 @@ function ChatPanel({
             placeholder={`Message #${activeChannel}`}
             aria-label="Message input"
             value={messageInput}
-            onChange={(event) =>
-              setMessageInput(event.target.value)
-            }
+            onChange={(event) => setMessageInput(event.target.value)}
           />
 
           <button

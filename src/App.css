@@ -396,3 +396,61 @@
 .message-body p {
   overflow-wrap: anywhere;
 }
+
+
+/* Message editing controls */
+.message-edit {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-top: 8px;
+}
+
+.message-edit input {
+  flex: 1;
+  min-width: 140px;
+  padding: 10px 12px;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  background: var(--message);
+  color: var(--text);
+  font: inherit;
+}
+
+.message-edit button,
+.message-actions button {
+  border: 0;
+  border-radius: 8px;
+  padding: 7px 10px;
+  background: var(--message);
+  color: var(--text);
+  font-size: 12px;
+}
+
+.message-edit button:hover,
+.message-actions button:hover {
+  background: var(--sidebar);
+}
+
+.message-actions {
+  display: flex;
+  gap: 8px;
+  margin-top: 7px;
+}
+
+.message-meta time {
+  color: var(--muted);
+  font-size: 11px;
+}
+
+.message-meta span {
+  font-size: 11px;
+  color: var(--muted);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .chat-content {
+    scroll-behavior: auto;
+  }
+}

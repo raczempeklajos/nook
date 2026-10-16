@@ -13,61 +13,59 @@ type Channel = {
   name: string;
 };
 
-// Temporary channel data until the backend is connected.
 const channels: Channel[] = [
   { id: "general", name: "general" },
   { id: "projects", name: "projects" },
   { id: "random", name: "random" },
 ];
 
-// Temporary messages for testing the interface.
 const initialMessages: ChatMessage[] = [
   {
     id: "1",
     channelId: "general",
     username: "Alex",
     content: "Welcome to Nook! 👋",
-    timestamp: "10:30 AM",
+    createdAt: "2026-10-16T10:30:00",
     avatarColor: "purple",
+    isOwnMessage: false,
   },
   {
     id: "2",
     channelId: "general",
     username: "Sam",
     content: "Really liking the calm atmosphere here.",
-    timestamp: "10:32 AM",
+    createdAt: "2026-10-16T10:32:00",
     avatarColor: "green",
+    isOwnMessage: false,
   },
   {
     id: "3",
     channelId: "projects",
     username: "Alex",
     content: "What are you working on today?",
-    timestamp: "11:00 AM",
+    createdAt: "2026-10-16T11:00:00",
     avatarColor: "purple",
+    isOwnMessage: false,
   },
   {
     id: "4",
     channelId: "random",
     username: "Sam",
     content: "Anyone listening to something good?",
-    timestamp: "11:15 AM",
+    createdAt: "2026-10-16T11:15:00",
     avatarColor: "green",
+    isOwnMessage: false,
   },
 ];
 
 function App() {
-  // Loads the saved theme or defaults to light mode.
   const [theme, setTheme] = useState<Theme>(() => {
     const savedTheme = localStorage.getItem("nook-theme");
     return savedTheme === "dark" ? "dark" : "light";
   });
 
   const [activeChannel, setActiveChannel] = useState("general");
-
-  // Stores all messages across different channels.
-  const [messages, setMessages] =
-    useState<ChatMessage[]>(initialMessages);
+  const [messages, setMessages] = useState<ChatMessage[]>(initialMessages);
 
   useEffect(() => {
     document.documentElement.dataset.theme = theme;
@@ -80,27 +78,49 @@ function App() {
     );
   };
 
-  // Creates a new message for the selected channel.
+  // Adds a new message to the currently selected channel.
   const handleSendMessage = (content: string) => {
     const newMessage: ChatMessage = {
       id: crypto.randomUUID(),
       channelId: activeChannel,
       username: "Developer",
       content,
-      timestamp: new Date().toLocaleTimeString("en-US", {
-        hour: "2-digit",
-        minute: "2-digit",
-      }),
+      createdAt: new Date().toISOString(),
       avatarColor: "green",
+      isOwnMessage: true,
     };
 
-    setMessages((previousMessages) => [
-      ...previousMessages,
-      newMessage,
-    ]);
+    setMessages((previous) => [...previous, newMessage]);
   };
 
-  // Only show messages from the selected channel.
+  // Updates the content of an existing own message.
+  const handleEditMessage = (messageId: string, content: string) => {
+    const updatedContent = content.trim();
+    if (!updatedContent) return;
+
+    setMessages((previous) =>
+      previous.map((message) =>
+        message.id === messageId && message.isOwnMessage
+          ? {
+              ...message,
+              content: updatedContent,
+              editedAt: new Date().toISOString(),
+            }
+          : message
+      )
+    );
+  };
+
+  // Removes an own message from the local message list.
+  const handleDeleteMessage = (messageId: string) => {
+    setMessages((previous) =>
+      previous.filter(
+        (message) =>
+          message.id !== messageId || !message.isOwnMessage
+      )
+    );
+  };
+
   const filteredMessages = messages.filter(
     (message) => message.channelId === activeChannel
   );
@@ -122,6 +142,8 @@ function App() {
         activeChannel={activeChannel}
         messages={filteredMessages}
         onSendMessage={handleSendMessage}
+        onEditMessage={handleEditMessage}
+        onDeleteMessage={handleDeleteMessage}
       />
     </div>
   );
