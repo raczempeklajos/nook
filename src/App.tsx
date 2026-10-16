@@ -1,122 +1,187 @@
-import { useState } from 'react'
-import heroImg from './assets/hero.png'
-import reactLogo from './assets/react.svg'
-import viteLogo from './assets/vite.svg'
-import './App.css'
+
+import { useEffect, useState } from "react";
+import "./App.css";
+
+type Theme = "light" | "dark";
+
+type Channel = {
+  id: string;
+  name: string;
+};
+
+const channels: Channel[] = [
+  { id: "general", name: "general" },
+  { id: "projects", name: "projects" },
+  { id: "random", name: "random" },
+];
 
 function App() {
-  const [count, setCount] = useState(0)
+  // Loads the previously selected theme.
+  const [theme, setTheme] = useState<Theme>(() => {
+    const savedTheme = localStorage.getItem("nook-theme");
+
+    return savedTheme === "dark" ? "dark" : "light";
+  });
+
+  const [activeChannel, setActiveChannel] = useState("general");
+
+  // Applies and saves the selected theme.
+  useEffect(() => {
+    document.documentElement.dataset.theme = theme;
+    localStorage.setItem("nook-theme", theme);
+  }, [theme]);
+
+  const toggleTheme = () => {
+    setTheme((current) =>
+      current === "light" ? "dark" : "light"
+    );
+  };
 
   return (
-    <>
-      <section id="center">
-        <div className="hero">
-          <img src={heroImg} className="base" width="170" height="179" alt="" />
-          <img src={reactLogo} className="framework" alt="React logo" />
-          <img src={viteLogo} className="vite" alt="Vite logo" />
-        </div>
-        <div>
-          <h1>Get started</h1>
-          <p>
-            Edit <code>src/App.tsx</code> and save to test <code>HMR</code>
-          </p>
-        </div>
-        <button
-          type="button"
-          className="counter"
-          onClick={() => setCount((count) => count + 1)}
-        >
-          Count is {count}
+    <div className="app-shell">
+      {/* Community navigation */}
+      <aside className="community-rail">
+        <div className="brand-icon">n.</div>
+
+        <button className="community-icon active" aria-label="Home">
+          N
         </button>
-      </section>
 
-      <div className="ticks"></div>
+        <button className="community-icon" aria-label="Add community">
+          +
+        </button>
 
-      <section id="next-steps">
-        <div id="docs">
-          <svg className="icon" role="presentation" aria-hidden="true">
-            <use href="/icons.svg#documentation-icon"></use>
-          </svg>
-          <h2>Documentation</h2>
-          <p>Your questions, answered</p>
-          <ul>
-            <li>
-              <a href="https://vite.dev/" target="_blank">
-                <img className="logo" src={viteLogo} alt="" />
-                Explore Vite
-              </a>
-            </li>
-            <li>
-              <a href="https://react.dev/" target="_blank">
-                <img className="button-icon" src={reactLogo} alt="" />
-                Learn more
-              </a>
-            </li>
-          </ul>
+        <div className="rail-spacer" />
+
+        <button
+          className="community-icon"
+          onClick={toggleTheme}
+          aria-label="Toggle theme"
+          title="Toggle theme"
+        >
+          {theme === "light" ? "☾" : "☀"}
+        </button>
+      </aside>
+
+      {/* Channel navigation */}
+      <aside className="channel-sidebar">
+        <div className="workspace-title">
+          <h2>My Space</h2>
+          <span>⌄</span>
         </div>
-        <div id="social">
-          <svg className="icon" role="presentation" aria-hidden="true">
-            <use href="/icons.svg#social-icon"></use>
-          </svg>
-          <h2>Connect with us</h2>
-          <p>Join the Vite community</p>
-          <ul>
-            <li>
-              <a href="https://github.com/vitejs/vite" target="_blank">
-                <svg
-                  className="button-icon"
-                  role="presentation"
-                  aria-hidden="true"
-                >
-                  <use href="/icons.svg#github-icon"></use>
-                </svg>
-                GitHub
-              </a>
-            </li>
-            <li>
-              <a href="https://chat.vite.dev/" target="_blank">
-                <svg
-                  className="button-icon"
-                  role="presentation"
-                  aria-hidden="true"
-                >
-                  <use href="/icons.svg#discord-icon"></use>
-                </svg>
-                Discord
-              </a>
-            </li>
-            <li>
-              <a href="https://x.com/vite_js" target="_blank">
-                <svg
-                  className="button-icon"
-                  role="presentation"
-                  aria-hidden="true"
-                >
-                  <use href="/icons.svg#x-icon"></use>
-                </svg>
-                X.com
-              </a>
-            </li>
-            <li>
-              <a href="https://bsky.app/profile/vite.dev" target="_blank">
-                <svg
-                  className="button-icon"
-                  role="presentation"
-                  aria-hidden="true"
-                >
-                  <use href="/icons.svg#bluesky-icon"></use>
-                </svg>
-                Bluesky
-              </a>
-            </li>
-          </ul>
-        </div>
-      </section>
 
-      <div className="ticks"></div>
-      <section id="spacer"></section>
-    </>
-  )
+        <div className="channel-group">
+          <p className="group-label">TEXT CHANNELS</p>
+
+          {channels.map((channel) => (
+            <button
+              key={channel.id}
+              className={`channel-item ${
+                activeChannel === channel.id ? "selected" : ""
+              }`}
+              onClick={() => setActiveChannel(channel.id)}
+            >
+              <span>#</span>
+              {channel.name}
+            </button>
+          ))}
+        </div>
+
+        <div className="channel-group">
+          <p className="group-label">VOICE CHANNELS</p>
+          <button className="channel-item">
+            <span>◉</span>
+            Lounge
+          </button>
+        </div>
+
+        <div className="sidebar-spacer" />
+
+        <div className="current-user">
+          <div className="user-avatar">L</div>
+          <div>
+            <strong>Developer</strong>
+            <small>Online</small>
+          </div>
+          <span className="online-dot" />
+        </div>
+      </aside>
+
+      {/* Main chat panel */}
+      <main className="chat-panel">
+        <header className="chat-header">
+          <div>
+            <span className="header-hash">#</span>
+            <strong>{activeChannel}</strong>
+          </div>
+
+          <span className="header-description">
+            A quieter place to connect.
+          </span>
+        </header>
+
+        <section className="chat-content">
+          <div className="welcome-message">
+            <div className="welcome-icon">#</div>
+            <h1>Welcome to #{activeChannel}</h1>
+            <p>
+              This is the beginning of your conversation.
+            </p>
+          </div>
+
+          <div className="message">
+            <div className="message-avatar avatar-purple">
+              A
+            </div>
+
+            <div className="message-body">
+              <div className="message-meta">
+                <strong>Alex</strong>
+                <span>10:30 AM</span>
+              </div>
+
+              <p>Welcome to Nook! 👋</p>
+            </div>
+          </div>
+
+          <div className="message">
+            <div className="message-avatar avatar-green">
+              S
+            </div>
+
+            <div className="message-body">
+              <div className="message-meta">
+                <strong>Sam</strong>
+                <span>10:32 AM</span>
+              </div>
+
+              <p>
+                Really liking the calm atmosphere here.
+              </p>
+            </div>
+          </div>
+        </section>
+
+        {/* Message composer - visual placeholder for now */}
+        <div className="composer-container">
+          <div className="message-composer">
+            <span className="composer-plus">+</span>
+
+            <input
+              type="text"
+              placeholder={`Message #${activeChannel}`}
+              aria-label="Message input"
+              disabled
+            />
+
+            <button type="button" disabled aria-label="Send message">
+              ➤
+            </button>
+          </div>
+        </div>
+      </main>
+    </div>
+  );
 }
 
-export default App
+export default App;
