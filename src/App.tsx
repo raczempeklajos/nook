@@ -7,6 +7,7 @@ import ProfileSettings from "./components/ProfileSettings";
 import CreateCommunity from "./components/CreateCommunity";
 import EditCommunity from "./components/EditCommunity";
 import DeleteCommunity from "./components/DeleteCommunity";
+import ChannelModal from "./components/ChannelModal";
 
 import type { ChatMessage } from "./components/Message";
 import { defaultUser, type UserProfile } from "./types/User";
@@ -16,8 +17,14 @@ import type { Community } from "./types/Community";
 import "./App.css";
 
 type Theme = "light" | "dark";
+type ChannelModalMode = "create" | "edit" | "delete";
 
-// Temporary messages for testing the application.
+type ChannelModalState = {
+  mode: ChannelModalMode;
+  communityId: string;
+  channelId?: string;
+};
+
 const initialMessages: ChatMessage[] = [
   {
     id: "1",
@@ -63,8 +70,8 @@ function App() {
   // =========================
 
   const [theme, setTheme] = useState<Theme>(() => {
-    const savedTheme = localStorage.getItem("nook-theme");
-    return savedTheme === "dark" ? "dark" : "light";
+    const saved = localStorage.getItem("nook-theme");
+    return saved === "dark" ? "dark" : "light";
   });
 
   useEffect(() => {
@@ -84,35 +91,35 @@ function App() {
 
   const [user, setUser] = useState<UserProfile>(() => {
     try {
-      const savedUser = localStorage.getItem("nook-user");
+      const saved = localStorage.getItem("nook-user");
 
-      if (savedUser) {
-        const parsedUser: unknown = JSON.parse(savedUser);
+      if (saved) {
+        const parsed: unknown = JSON.parse(saved);
 
         if (
-          typeof parsedUser === "object" &&
-          parsedUser !== null &&
-          "username" in parsedUser &&
-          typeof parsedUser.username === "string" &&
-          parsedUser.username.trim().length > 0 &&
-          "bio" in parsedUser &&
-          typeof parsedUser.bio === "string" &&
-          "status" in parsedUser &&
-          (parsedUser.status === "online" ||
-            parsedUser.status === "away" ||
-            parsedUser.status === "dnd" ||
-            parsedUser.status === "invisible")
+          typeof parsed === "object" &&
+          parsed !== null &&
+          "username" in parsed &&
+          typeof parsed.username === "string" &&
+          parsed.username.trim().length > 0 &&
+          "bio" in parsed &&
+          typeof parsed.bio === "string" &&
+          "status" in parsed &&
+          (parsed.status === "online" ||
+            parsed.status === "away" ||
+            parsed.status === "dnd" ||
+            parsed.status === "invisible")
         ) {
           return {
             ...defaultUser,
-            username: parsedUser.username,
-            bio: parsedUser.bio,
-            status: parsedUser.status,
+            username: parsed.username,
+            bio: parsed.bio,
+            status: parsed.status,
           };
         }
       }
     } catch {
-      // Ignore invalid saved profile data.
+      // Ignore invalid saved data.
     }
 
     return defaultUser;
@@ -122,7 +129,6 @@ function App() {
 
   const handleSaveProfile = (updatedUser: UserProfile) => {
     setUser(updatedUser);
-
     localStorage.setItem(
       "nook-user",
       JSON.stringify(updatedUser)
@@ -170,7 +176,7 @@ function App() {
           }
         }
       } catch {
-        // Ignore invalid saved community data.
+        // Ignore invalid saved data.
       }
 
       return initialCommunities;
@@ -178,12 +184,20 @@ function App() {
   );
 
   const [activeCommunityId, setActiveCommunityId] =
-    useState("my-space");
+    useState(() => {
+      try {
+        return (
+          localStorage.getItem("nook-active-community") ||
+          "my-space"
+        );
+      } catch {
+        return "my-space";
+      }
+    });
 
   const [activeChannel, setActiveChannel] =
     useState("general");
 
-  // Community modal states
   const [isCreateCommunityOpen, setIsCreateCommunityOpen] =
     useState(false);
 
@@ -193,40 +207,73 @@ function App() {
   const [deletingCommunityId, setDeletingCommunityId] =
     useState<string | null>(null);
 
-  // Save communities
+  const [channelModal, setChannelModal] =
+    useState<ChannelModalState | null>(null);
+
+  const [messages, setMessages] =
+    useState<ChatMessage[]>(initialMessages);
+
   const saveCommunities = (updated: Community[]) => {
     setCommunities(updated);
-
     localStorage.setItem(
       "nook-communities",
       JSON.stringify(updated)
     );
   };
 
-  // Currently selected community
   const activeCommunity =
     communities.find(
       (community) => community.id === activeCommunityId
     ) ?? communities[0];
 
-  // Switch community
+  // Keep the active community and channel valid.
+  useEffect(() => {
+    if (!activeCommunity) return;
+
+    if (activeCommunity.id !== activeCommunityId) {
+      setActiveCommunityId(activeCommunity.id);
+    }
+
+    const selectedChannel = activeCommunity.channels.find(
+      (channel) =>
+        channel.id === activeChannel &&
+        channel.type === "text"
+    );
+
+    if (!selectedChannel) {
+      const firstTextChannel = activeCommunity.channels.find(
+        (channel) => channel.type === "text"
+      );
+
+      setActiveChannel(firstTextChannel?.id ?? "");
+    }
+  }, [activeCommunity, activeCommunityId, activeChannel]);
+
+  useEffect(() => {
+    if (activeCommunity) {
+      localStorage.setItem(
+        "nook-active-community",
+        activeCommunity.id
+      );
+    }
+  }, [activeCommunity]);
+
   const handleCommunitySelect = (communityId: string) => {
-    const selectedCommunity = communities.find(
+    const selected = communities.find(
       (community) => community.id === communityId
     );
 
-    if (!selectedCommunity) return;
+    if (!selected) return;
 
     setActiveCommunityId(communityId);
 
-    const firstTextChannel = selectedCommunity.channels.find(
+    const firstTextChannel = selected.channels.find(
       (channel) => channel.type === "text"
     );
 
     setActiveChannel(firstTextChannel?.id ?? "");
   };
 
-  // Create community
   const handleCreateCommunity = (
     name: string,
     icon: string
@@ -245,13 +292,11 @@ function App() {
     };
 
     saveCommunities([...communities, newCommunity]);
-
     setActiveCommunityId(newCommunity.id);
     setActiveChannel(newCommunity.channels[0].id);
     setIsCreateCommunityOpen(false);
   };
 
-  // Edit community
   const handleEditCommunity = (
     id: string,
     name: string,
@@ -259,11 +304,7 @@ function App() {
   ) => {
     const updated = communities.map((community) =>
       community.id === id
-        ? {
-            ...community,
-            name,
-            icon,
-          }
+        ? { ...community, name, icon }
         : community
     );
 
@@ -271,19 +312,17 @@ function App() {
     setEditingCommunityId(null);
   };
 
-  // Delete community
   const handleDeleteCommunity = (id: string) => {
-    // Always keep at least one community.
     if (communities.length <= 1) {
       setDeletingCommunityId(null);
       return;
     }
 
-    const deletedCommunity = communities.find(
+    const deleted = communities.find(
       (community) => community.id === id
     );
 
-    if (!deletedCommunity) {
+    if (!deleted) {
       setDeletingCommunityId(null);
       return;
     }
@@ -294,9 +333,8 @@ function App() {
 
     saveCommunities(updated);
 
-    // Remove messages belonging to deleted channels.
     const deletedChannelIds = new Set(
-      deletedCommunity.channels.map((channel) => channel.id)
+      deleted.channels.map((channel) => channel.id)
     );
 
     setMessages((previous) =>
@@ -306,13 +344,11 @@ function App() {
       )
     );
 
-    // Select another community if the active one was deleted.
     if (activeCommunityId === id) {
-      const nextCommunity = updated[0];
+      const next = updated[0];
+      setActiveCommunityId(next.id);
 
-      setActiveCommunityId(nextCommunity.id);
-
-      const firstTextChannel = nextCommunity.channels.find(
+      const firstTextChannel = next.channels.find(
         (channel) => channel.type === "text"
       );
 
@@ -322,18 +358,183 @@ function App() {
     setDeletingCommunityId(null);
   };
 
-  // Selected community for editing
   const editingCommunity = communities.find(
     (community) => community.id === editingCommunityId
   );
 
-  // Selected community for deletion
   const deletingCommunity = communities.find(
     (community) => community.id === deletingCommunityId
   );
 
   // =========================
-  // CHANNELS
+  // CHANNEL MANAGEMENT
+  // =========================
+
+  const handleCreateChannel = (name: string) => {
+    if (!channelModal || channelModal.mode !== "create") {
+      return;
+    }
+
+    const community = communities.find(
+      (item) => item.id === channelModal.communityId
+    );
+
+    if (!community) return;
+
+    const normalizedName = name.trim();
+
+    if (!normalizedName) return;
+
+    const alreadyExists = community.channels.some(
+      (channel) =>
+        channel.name.toLowerCase() ===
+        normalizedName.toLowerCase()
+    );
+
+    if (alreadyExists) {
+      window.alert("A channel with this name already exists.");
+      return;
+    }
+
+    const newChannel = {
+      id: crypto.randomUUID(),
+      name: normalizedName,
+      type: "text" as const,
+    };
+
+    const updated = communities.map((item) =>
+      item.id === community.id
+        ? {
+            ...item,
+            channels: [...item.channels, newChannel],
+          }
+        : item
+    );
+
+    saveCommunities(updated);
+    setActiveCommunityId(community.id);
+    setActiveChannel(newChannel.id);
+    setChannelModal(null);
+  };
+
+  const handleEditChannel = (name: string) => {
+    if (
+      !channelModal ||
+      channelModal.mode !== "edit" ||
+      !channelModal.channelId
+    ) {
+      return;
+    }
+
+    const community = communities.find(
+      (item) => item.id === channelModal.communityId
+    );
+
+    if (!community) return;
+
+    const normalizedName = name.trim();
+
+    if (!normalizedName) return;
+
+    const alreadyExists = community.channels.some(
+      (channel) =>
+        channel.id !== channelModal.channelId &&
+        channel.name.toLowerCase() ===
+          normalizedName.toLowerCase()
+    );
+
+    if (alreadyExists) {
+      window.alert("A channel with this name already exists.");
+      return;
+    }
+
+    const updated = communities.map((item) =>
+      item.id === community.id
+        ? {
+            ...item,
+            channels: item.channels.map((channel) =>
+              channel.id === channelModal.channelId
+                ? { ...channel, name: normalizedName }
+                : channel
+            ),
+          }
+        : item
+    );
+
+    saveCommunities(updated);
+    setChannelModal(null);
+  };
+
+  const handleDeleteChannel = () => {
+    if (
+      !channelModal ||
+      channelModal.mode !== "delete" ||
+      !channelModal.channelId
+    ) {
+      return;
+    }
+
+    const community = communities.find(
+      (item) => item.id === channelModal.communityId
+    );
+
+    if (!community) return;
+
+    const textChannels = community.channels.filter(
+      (channel) => channel.type === "text"
+    );
+
+    if (textChannels.length <= 1) {
+      setChannelModal(null);
+      return;
+    }
+
+    const channelId = channelModal.channelId;
+
+    const updated = communities.map((item) =>
+      item.id === community.id
+        ? {
+            ...item,
+            channels: item.channels.filter(
+              (channel) => channel.id !== channelId
+            ),
+          }
+        : item
+    );
+
+    saveCommunities(updated);
+
+    setMessages((previous) =>
+      previous.filter(
+        (message) => message.channelId !== channelId
+      )
+    );
+
+    if (
+      activeCommunityId === community.id &&
+      activeChannel === channelId
+    ) {
+      const nextChannel = textChannels.find(
+        (channel) => channel.id !== channelId
+      );
+
+      setActiveChannel(nextChannel?.id ?? "");
+    }
+
+    setChannelModal(null);
+  };
+
+  const modalCommunity = communities.find(
+    (community) =>
+      community.id === channelModal?.communityId
+  );
+
+  const modalChannel = modalCommunity?.channels.find(
+    (channel) => channel.id === channelModal?.channelId
+  );
+
+  // =========================
+  // MESSAGES
   // =========================
 
   const activeChannelName =
@@ -341,14 +542,6 @@ function App() {
       (channel) => channel.id === activeChannel
     )?.name ?? "";
 
-  // =========================
-  // MESSAGES
-  // =========================
-
-  const [messages, setMessages] =
-    useState<ChatMessage[]>(initialMessages);
-
-  // Send message
   const handleSendMessage = (content: string) => {
     if (!activeChannelName || !content.trim()) return;
 
@@ -368,7 +561,6 @@ function App() {
     ]);
   };
 
-  // Edit message
   const handleEditMessage = (
     messageId: string,
     content: string
@@ -391,7 +583,6 @@ function App() {
     );
   };
 
-  // Delete message
   const handleDeleteMessage = (messageId: string) => {
     setMessages((previous) =>
       previous.filter(
@@ -402,7 +593,6 @@ function App() {
     );
   };
 
-  // Messages for active channel
   const filteredMessages = messages.filter(
     (message) => message.channelId === activeChannel
   );
@@ -413,12 +603,11 @@ function App() {
 
   return (
     <div className="app-shell">
-      {/* Community sidebar */}
       <CommunitySidebar
         theme={theme}
         onToggleTheme={toggleTheme}
         communities={communities}
-        activeCommunityId={activeCommunityId}
+        activeCommunityId={activeCommunity.id}
         onCommunitySelect={handleCommunitySelect}
         onCreateCommunity={() =>
           setIsCreateCommunityOpen(true)
@@ -427,20 +616,34 @@ function App() {
         onDeleteCommunity={setDeletingCommunityId}
       />
 
-      {/* Channel sidebar */}
-      {activeCommunity && (
-        <ChannelSidebar
-          community={activeCommunity}
-          activeChannel={activeChannel}
-          onChannelSelect={setActiveChannel}
-          user={user}
-          onOpenProfile={() =>
-            setIsProfileOpen(true)
-          }
-        />
-      )}
+      <ChannelSidebar
+        community={activeCommunity}
+        activeChannel={activeChannel}
+        onChannelSelect={setActiveChannel}
+        onCreateChannel={() =>
+          setChannelModal({
+            mode: "create",
+            communityId: activeCommunity.id,
+          })
+        }
+        onEditChannel={(channelId) =>
+          setChannelModal({
+            mode: "edit",
+            communityId: activeCommunity.id,
+            channelId,
+          })
+        }
+        onDeleteChannel={(channelId) =>
+          setChannelModal({
+            mode: "delete",
+            communityId: activeCommunity.id,
+            channelId,
+          })
+        }
+        user={user}
+        onOpenProfile={() => setIsProfileOpen(true)}
+      />
 
-      {/* Chat */}
       <ChatPanel
         activeChannel={activeChannelName}
         messages={filteredMessages}
@@ -449,18 +652,14 @@ function App() {
         onDeleteMessage={handleDeleteMessage}
       />
 
-      {/* Profile settings */}
       {isProfileOpen && (
         <ProfileSettings
           user={user}
           onSave={handleSaveProfile}
-          onClose={() =>
-            setIsProfileOpen(false)
-          }
+          onClose={() => setIsProfileOpen(false)}
         />
       )}
 
-      {/* Create community */}
       {isCreateCommunityOpen && (
         <CreateCommunity
           onCreate={handleCreateCommunity}
@@ -470,28 +669,40 @@ function App() {
         />
       )}
 
-      {/* Edit community */}
       {editingCommunity && (
         <EditCommunity
           key={editingCommunity.id}
           community={editingCommunity}
           onSave={handleEditCommunity}
-          onClose={() =>
-            setEditingCommunityId(null)
-          }
+          onClose={() => setEditingCommunityId(null)}
         />
       )}
 
-      {/* Delete community */}
       {deletingCommunity && (
         <DeleteCommunity
           community={deletingCommunity}
           onConfirm={handleDeleteCommunity}
-          onClose={() =>
-            setDeletingCommunityId(null)
-          }
+          onClose={() => setDeletingCommunityId(null)}
         />
       )}
+
+      {channelModal &&
+        modalCommunity &&
+        (channelModal.mode === "create" ||
+          modalChannel) && (
+          <ChannelModal
+            key={`${channelModal.mode}-${channelModal.channelId ?? "new"}`}
+            mode={channelModal.mode}
+            initialName={modalChannel?.name ?? ""}
+            onSave={
+              channelModal.mode === "create"
+                ? handleCreateChannel
+                : handleEditChannel
+            }
+            onDelete={handleDeleteChannel}
+            onClose={() => setChannelModal(null)}
+          />
+        )}
     </div>
   );
 }

@@ -724,3 +724,117 @@
 .settings-delete:hover {
   background: #ad4652;
 }
+
+/* Channel management */
+
+.channel-group-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding-right: 8px;
+  margin-bottom: 8px;
+}
+
+.channel-group-header .group-label {
+  margin: 0;
+}
+
+.channel-add-button {
+  width: 26px;
+  height: 26px;
+  border: 0;
+  border-radius: 8px;
+  background: transparent;
+  color: var(--muted);
+  font-size: 21px;
+  cursor: pointer;
+}
+
+.channel-add-button:hover {
+  background: var(--message);
+  color: var(--text);
+}
+
+.channel-row {
+  position: relative;
+  display: flex;
+  align-items: center;
+  border-radius: 10px;
+}
+
+.channel-row > .channel-item {
+  flex: 1;
+  min-width: 0;
+}
+
+.channel-name {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-size: 13px !important;
+}
+
+.channel-menu-button {
+  flex-shrink: 0;
+  width: 28px;
+  height: 30px;
+  border: 0;
+  border-radius: 8px;
+  background: transparent;
+  color: var(--muted);
+  font-size: 20px;
+  cursor: pointer;
+}
+
+.channel-menu-button:hover {
+  background: var(--message);
+  color: var(--text);
+}
+
+.channel-context-menu {
+  position: absolute;
+  top: 100%;
+  right: 0;
+  z-index: 80;
+  width: 180px;
+  padding: 6px;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  box-shadow: 0 12px 35px rgba(0, 0, 0, 0.18);
+}
+
+.channel-context-menu button {
+  display: block;
+  width: 100%;
+  padding: 11px 12px;
+  border: 0;
+  border-radius: 8px;
+  background: transparent;
+  color: var(--text);
+  font-size: 13px;
+  text-align: left;
+  cursor: pointer;
+}
+
+.channel-context-menu button:hover {
+  background: var(--message);
+}
+
+.channel-context-menu .danger {
+  color: #dc7a83;
+}
+
+.channel-context-menu .danger:hover:not(:disabled) {
+  background: rgba(220, 122, 131, 0.12);
+}
+
+.channel-context-menu button:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+
+.channel-sidebar {
+  position: relative;
+  z-index: 10;
+}
