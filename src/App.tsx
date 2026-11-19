@@ -4,6 +4,7 @@ import CommunitySidebar from "./components/CommunitySidebar";
 import ChannelSidebar from "./components/ChannelSidebar";
 import ChatPanel from "./components/ChatPanel";
 import ProfileSettings from "./components/ProfileSettings";
+import CreateCommunity from "./components/CreateCommunity";
 import type { ChatMessage } from "./components/Message";
 import { defaultUser, type UserProfile } from "./types/User";
 import { initialCommunities } from "./data/communities";
@@ -96,12 +97,53 @@ function App() {
     return defaultUser;
   });
 
-  // Profile settings visibility
+  // Modal visibility
   const [isProfileOpen, setIsProfileOpen] = useState(false);
+  const [isCreateCommunityOpen, setIsCreateCommunityOpen] =
+    useState(false);
 
   // Community state
-  const [communities] =
-    useState<Community[]>(initialCommunities);
+  const [communities, setCommunities] = useState<Community[]>(() => {
+    try {
+      const saved = localStorage.getItem("nook-communities");
+
+      if (saved) {
+        const parsed: unknown = JSON.parse(saved);
+
+        if (
+          Array.isArray(parsed) &&
+          parsed.length > 0 &&
+          parsed.every(
+            (community) =>
+              community !== null &&
+              typeof community === "object" &&
+              typeof community.id === "string" &&
+              typeof community.name === "string" &&
+              typeof community.icon === "string" &&
+              Array.isArray(community.channels) &&
+              community.channels.every(
+                (channel: unknown) =>
+                  channel !== null &&
+                  typeof channel === "object" &&
+                  "id" in channel &&
+                  typeof channel.id === "string" &&
+                  "name" in channel &&
+                  typeof channel.name === "string" &&
+                  "type" in channel &&
+                  (channel.type === "text" ||
+                    channel.type === "voice")
+              )
+          )
+        ) {
+          return parsed as Community[];
+        }
+      }
+    } catch {
+      // Ignore invalid saved community data.
+    }
+
+    return initialCommunities;
+  });
 
   // Currently selected community
   const [activeCommunityId, setActiveCommunityId] =
@@ -159,6 +201,35 @@ function App() {
     );
 
     setActiveChannel(firstTextChannel?.id ?? "");
+  };
+
+  // Create a new community
+  const handleCreateCommunity = (name: string, icon: string) => {
+    const newCommunity: Community = {
+      id: crypto.randomUUID(),
+      name,
+      icon,
+      channels: [
+        {
+          id: crypto.randomUUID(),
+          name: "general",
+          type: "text",
+        },
+      ],
+    };
+
+    const updatedCommunities = [...communities, newCommunity];
+
+    setCommunities(updatedCommunities);
+
+    localStorage.setItem(
+      "nook-communities",
+      JSON.stringify(updatedCommunities)
+    );
+
+    setActiveCommunityId(newCommunity.id);
+    setActiveChannel(newCommunity.channels[0].id);
+    setIsCreateCommunityOpen(false);
   };
 
   // Find the selected channel's display name
@@ -229,6 +300,7 @@ function App() {
         communities={communities}
         activeCommunityId={activeCommunityId}
         onCommunitySelect={handleCommunitySelect}
+        onCreateCommunity={() => setIsCreateCommunityOpen(true)}
       />
 
       <ChannelSidebar
@@ -253,6 +325,14 @@ function App() {
           user={user}
           onSave={handleSaveProfile}
           onClose={() => setIsProfileOpen(false)}
+        />
+      )}
+
+      {/* Create community modal */}
+      {isCreateCommunityOpen && (
+        <CreateCommunity
+          onCreate={handleCreateCommunity}
+          onClose={() => setIsCreateCommunityOpen(false)}
         />
       )}
     </div>

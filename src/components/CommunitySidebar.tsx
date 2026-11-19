@@ -4,6 +4,7 @@ import type { Community } from "../types/Community";
 type CommunitySidebarProps = {
   theme: "light" | "dark";
   onToggleTheme: () => void;
+  onCreateCommunity: () => void;
   communities: Community[];
   activeCommunityId: string;
   onCommunitySelect: (communityId: string) => void;
@@ -15,6 +16,7 @@ function CommunitySidebar({
   communities,
   activeCommunityId,
   onCommunitySelect,
+  onCreateCommunity,
 }: CommunitySidebarProps) {
   return (
     <aside className="community-rail">
@@ -39,15 +41,17 @@ function CommunitySidebar({
       ))}
 
       {/* Create community button - coming later */}
+      
       <button
         className="community-icon"
         type="button"
-        aria-label="Add community"
-        title="Coming soon"
-        disabled
+        onClick={onCreateCommunity}
+        aria-label="Create community"
+        title="Create community"
       >
         +
       </button>
+
 
       <div className="rail-spacer" />
 
