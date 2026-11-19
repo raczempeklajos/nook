@@ -28,6 +28,7 @@ type ChannelModalState = {
 const initialMessages: ChatMessage[] = [
   {
     id: "1",
+    communityId: "my-space",
     channelId: "general",
     username: "Alex",
     content: "Welcome to Nook! 👋",
@@ -37,6 +38,7 @@ const initialMessages: ChatMessage[] = [
   },
   {
     id: "2",
+    communityId: "my-space",
     channelId: "general",
     username: "Sam",
     content: "Really liking the calm atmosphere here.",
@@ -46,6 +48,7 @@ const initialMessages: ChatMessage[] = [
   },
   {
     id: "3",
+    communityId: "my-space",
     channelId: "projects",
     username: "Alex",
     content: "What are you working on today?",
@@ -55,6 +58,7 @@ const initialMessages: ChatMessage[] = [
   },
   {
     id: "4",
+    communityId: "my-space",
     channelId: "random",
     username: "Sam",
     content: "Anyone listening to something good?",
@@ -63,6 +67,120 @@ const initialMessages: ChatMessage[] = [
     isOwnMessage: false,
   },
 ];
+
+function loadMessages(): ChatMessage[] {
+  try {
+    const saved = localStorage.getItem("nook-messages");
+
+    if (saved !== null) {
+      const parsed: unknown = JSON.parse(saved);
+
+      if (
+        Array.isArray(parsed) &&
+        parsed.every(
+          (message) =>
+            message !== null &&
+            typeof message === "object" &&
+            typeof message.id === "string" &&
+            typeof message.communityId === "string" &&
+            typeof message.channelId === "string" &&
+            typeof message.username === "string" &&
+            typeof message.content === "string" &&
+            typeof message.createdAt === "string" &&
+            (message.editedAt === undefined ||
+              typeof message.editedAt === "string") &&
+            (message.avatarColor === "purple" ||
+              message.avatarColor === "green") &&
+            typeof message.isOwnMessage === "boolean"
+        )
+      ) {
+        return parsed as ChatMessage[];
+      }
+    }
+  } catch {
+    // Ignore invalid saved messages.
+  }
+
+  return initialMessages;
+}
+
+function loadCommunities(): Community[] {
+  try {
+    const saved = localStorage.getItem("nook-communities");
+
+    if (saved) {
+      const parsed: unknown = JSON.parse(saved);
+
+      if (
+        Array.isArray(parsed) &&
+        parsed.length > 0 &&
+        parsed.every(
+          (community) =>
+            community !== null &&
+            typeof community === "object" &&
+            typeof community.id === "string" &&
+            typeof community.name === "string" &&
+            typeof community.icon === "string" &&
+            Array.isArray(community.channels) &&
+            community.channels.every(
+              (channel: unknown) =>
+                channel !== null &&
+                typeof channel === "object" &&
+                "id" in channel &&
+                typeof channel.id === "string" &&
+                "name" in channel &&
+                typeof channel.name === "string" &&
+                "type" in channel &&
+                (channel.type === "text" ||
+                  channel.type === "voice")
+            )
+        )
+      ) {
+        return parsed as Community[];
+      }
+    }
+  } catch {
+    // Ignore invalid saved communities.
+  }
+
+  return initialCommunities;
+}
+
+function loadUser(): UserProfile {
+  try {
+    const saved = localStorage.getItem("nook-user");
+
+    if (saved) {
+      const parsed: unknown = JSON.parse(saved);
+
+      if (
+        typeof parsed === "object" &&
+        parsed !== null &&
+        "username" in parsed &&
+        typeof parsed.username === "string" &&
+        parsed.username.trim().length > 0 &&
+        "bio" in parsed &&
+        typeof parsed.bio === "string" &&
+        "status" in parsed &&
+        (parsed.status === "online" ||
+          parsed.status === "away" ||
+          parsed.status === "dnd" ||
+          parsed.status === "invisible")
+      ) {
+        return {
+          ...defaultUser,
+          username: parsed.username,
+          bio: parsed.bio,
+          status: parsed.status,
+        };
+      }
+    }
+  } catch {
+    // Ignore invalid saved profile.
+  }
+
+  return defaultUser;
+}
 
 function App() {
   // =========================
@@ -89,46 +207,14 @@ function App() {
   // USER PROFILE
   // =========================
 
-  const [user, setUser] = useState<UserProfile>(() => {
-    try {
-      const saved = localStorage.getItem("nook-user");
+  const [user, setUser] = useState<UserProfile>(loadUser);
 
-      if (saved) {
-        const parsed: unknown = JSON.parse(saved);
-
-        if (
-          typeof parsed === "object" &&
-          parsed !== null &&
-          "username" in parsed &&
-          typeof parsed.username === "string" &&
-          parsed.username.trim().length > 0 &&
-          "bio" in parsed &&
-          typeof parsed.bio === "string" &&
-          "status" in parsed &&
-          (parsed.status === "online" ||
-            parsed.status === "away" ||
-            parsed.status === "dnd" ||
-            parsed.status === "invisible")
-        ) {
-          return {
-            ...defaultUser,
-            username: parsed.username,
-            bio: parsed.bio,
-            status: parsed.status,
-          };
-        }
-      }
-    } catch {
-      // Ignore invalid saved data.
-    }
-
-    return defaultUser;
-  });
-
-  const [isProfileOpen, setIsProfileOpen] = useState(false);
+  const [isProfileOpen, setIsProfileOpen] =
+    useState(false);
 
   const handleSaveProfile = (updatedUser: UserProfile) => {
     setUser(updatedUser);
+
     localStorage.setItem(
       "nook-user",
       JSON.stringify(updatedUser)
@@ -139,49 +225,8 @@ function App() {
   // COMMUNITIES
   // =========================
 
-  const [communities, setCommunities] = useState<Community[]>(
-    () => {
-      try {
-        const saved = localStorage.getItem("nook-communities");
-
-        if (saved) {
-          const parsed: unknown = JSON.parse(saved);
-
-          if (
-            Array.isArray(parsed) &&
-            parsed.length > 0 &&
-            parsed.every(
-              (community) =>
-                community !== null &&
-                typeof community === "object" &&
-                typeof community.id === "string" &&
-                typeof community.name === "string" &&
-                typeof community.icon === "string" &&
-                Array.isArray(community.channels) &&
-                community.channels.every(
-                  (channel: unknown) =>
-                    channel !== null &&
-                    typeof channel === "object" &&
-                    "id" in channel &&
-                    typeof channel.id === "string" &&
-                    "name" in channel &&
-                    typeof channel.name === "string" &&
-                    "type" in channel &&
-                    (channel.type === "text" ||
-                      channel.type === "voice")
-                )
-            )
-          ) {
-            return parsed as Community[];
-          }
-        }
-      } catch {
-        // Ignore invalid saved data.
-      }
-
-      return initialCommunities;
-    }
-  );
+  const [communities, setCommunities] =
+    useState<Community[]>(loadCommunities);
 
   const [activeCommunityId, setActiveCommunityId] =
     useState(() => {
@@ -210,11 +255,24 @@ function App() {
   const [channelModal, setChannelModal] =
     useState<ChannelModalState | null>(null);
 
+  // =========================
+  // MESSAGES
+  // =========================
+
   const [messages, setMessages] =
-    useState<ChatMessage[]>(initialMessages);
+    useState<ChatMessage[]>(loadMessages);
+
+  // Automatically persist every message change.
+  useEffect(() => {
+    localStorage.setItem(
+      "nook-messages",
+      JSON.stringify(messages)
+    );
+  }, [messages]);
 
   const saveCommunities = (updated: Community[]) => {
     setCommunities(updated);
+
     localStorage.setItem(
       "nook-communities",
       JSON.stringify(updated)
@@ -258,6 +316,10 @@ function App() {
     }
   }, [activeCommunity]);
 
+  // =========================
+  // COMMUNITY MANAGEMENT
+  // =========================
+
   const handleCommunitySelect = (communityId: string) => {
     const selected = communities.find(
       (community) => community.id === communityId
@@ -292,6 +354,7 @@ function App() {
     };
 
     saveCommunities([...communities, newCommunity]);
+
     setActiveCommunityId(newCommunity.id);
     setActiveChannel(newCommunity.channels[0].id);
     setIsCreateCommunityOpen(false);
@@ -333,19 +396,16 @@ function App() {
 
     saveCommunities(updated);
 
-    const deletedChannelIds = new Set(
-      deleted.channels.map((channel) => channel.id)
-    );
-
+    // Delete only messages belonging to this community.
     setMessages((previous) =>
       previous.filter(
-        (message) =>
-          !deletedChannelIds.has(message.channelId)
+        (message) => message.communityId !== id
       )
     );
 
     if (activeCommunityId === id) {
       const next = updated[0];
+
       setActiveCommunityId(next.id);
 
       const firstTextChannel = next.channels.find(
@@ -392,7 +452,9 @@ function App() {
     );
 
     if (alreadyExists) {
-      window.alert("A channel with this name already exists.");
+      window.alert(
+        "A channel with this name already exists."
+      );
       return;
     }
 
@@ -444,7 +506,9 @@ function App() {
     );
 
     if (alreadyExists) {
-      window.alert("A channel with this name already exists.");
+      window.alert(
+        "A channel with this name already exists."
+      );
       return;
     }
 
@@ -504,9 +568,14 @@ function App() {
 
     saveCommunities(updated);
 
+    // Delete messages from this channel in this community.
     setMessages((previous) =>
       previous.filter(
-        (message) => message.channelId !== channelId
+        (message) =>
+          !(
+            message.communityId === community.id &&
+            message.channelId === channelId
+          )
       )
     );
 
@@ -534,7 +603,7 @@ function App() {
   );
 
   // =========================
-  // MESSAGES
+  // MESSAGE MANAGEMENT
   // =========================
 
   const activeChannelName =
@@ -543,10 +612,17 @@ function App() {
     )?.name ?? "";
 
   const handleSendMessage = (content: string) => {
-    if (!activeChannelName || !content.trim()) return;
+    if (
+      !activeCommunity ||
+      !activeChannelName ||
+      !content.trim()
+    ) {
+      return;
+    }
 
     const newMessage: ChatMessage = {
       id: crypto.randomUUID(),
+      communityId: activeCommunity.id,
       channelId: activeChannel,
       username: user.username,
       content: content.trim(),
@@ -567,12 +643,14 @@ function App() {
   ) => {
     const updatedContent = content.trim();
 
-    if (!updatedContent) return;
+    if (!updatedContent || !activeCommunity) return;
 
     setMessages((previous) =>
       previous.map((message) =>
         message.id === messageId &&
-        message.isOwnMessage
+        message.isOwnMessage &&
+        message.communityId === activeCommunity.id &&
+        message.channelId === activeChannel
           ? {
               ...message,
               content: updatedContent,
@@ -584,17 +662,26 @@ function App() {
   };
 
   const handleDeleteMessage = (messageId: string) => {
+    if (!activeCommunity) return;
+
     setMessages((previous) =>
       previous.filter(
         (message) =>
-          message.id !== messageId ||
-          !message.isOwnMessage
+          !(
+            message.id === messageId &&
+            message.isOwnMessage &&
+            message.communityId === activeCommunity.id &&
+            message.channelId === activeChannel
+          )
       )
     );
   };
 
+  // Filter by both community and channel.
   const filteredMessages = messages.filter(
-    (message) => message.channelId === activeChannel
+    (message) =>
+      message.communityId === activeCommunity?.id &&
+      message.channelId === activeChannel
   );
 
   // =========================

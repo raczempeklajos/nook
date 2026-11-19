@@ -1,6 +1,9 @@
 
+import { useState } from "react";
+
 export type ChatMessage = {
   id: string;
+  communityId: string;
   channelId: string;
   username: string;
   content: string;
@@ -16,19 +19,18 @@ type MessageProps = {
   onDelete: (messageId: string) => void;
 };
 
-import { useState } from "react";
-
 function Message({ message, onEdit, onDelete }: MessageProps) {
   const [isEditing, setIsEditing] = useState(false);
-  const [editedContent, setEditedContent] = useState(message.content);
-
-  const formattedTime = new Date(message.createdAt).toLocaleTimeString(
-    "en-US",
-    {
-      hour: "2-digit",
-      minute: "2-digit",
-    }
+  const [editedContent, setEditedContent] = useState(
+    message.content
   );
+
+  const formattedTime = new Date(
+    message.createdAt
+  ).toLocaleTimeString("en-US", {
+    hour: "2-digit",
+    minute: "2-digit",
+  });
 
   const handleSave = () => {
     const content = editedContent.trim();
@@ -46,16 +48,25 @@ function Message({ message, onEdit, onDelete }: MessageProps) {
 
   return (
     <article className="message">
-      <div className={`message-avatar avatar-${message.avatarColor}`}>
+      <div
+        className={`message-avatar avatar-${message.avatarColor}`}
+      >
         {message.username.charAt(0).toUpperCase()}
       </div>
 
       <div className="message-body">
         <div className="message-meta">
           <strong>{message.username}</strong>
-          <time dateTime={message.createdAt} title={new Date(message.createdAt).toLocaleString()}>
+
+          <time
+            dateTime={message.createdAt}
+            title={new Date(
+              message.createdAt
+            ).toLocaleString()}
+          >
             {formattedTime}
           </time>
+
           {message.editedAt && <span>(edited)</span>}
         </div>
 
@@ -64,16 +75,28 @@ function Message({ message, onEdit, onDelete }: MessageProps) {
             <input
               type="text"
               value={editedContent}
-              onChange={(event) => setEditedContent(event.target.value)}
+              onChange={(event) =>
+                setEditedContent(event.target.value)
+              }
               onKeyDown={(event) => {
-                if (event.key === "Enter") handleSave();
-                if (event.key === "Escape") handleCancel();
+                if (event.key === "Enter") {
+                  handleSave();
+                }
+
+                if (event.key === "Escape") {
+                  handleCancel();
+                }
               }}
               aria-label="Edit message"
             />
 
-            <button onClick={handleSave}>Save</button>
-            <button onClick={handleCancel}>Cancel</button>
+            <button type="button" onClick={handleSave}>
+              Save
+            </button>
+
+            <button type="button" onClick={handleCancel}>
+              Cancel
+            </button>
           </div>
         ) : (
           <p>{message.content}</p>
@@ -82,6 +105,7 @@ function Message({ message, onEdit, onDelete }: MessageProps) {
         {message.isOwnMessage && !isEditing && (
           <div className="message-actions">
             <button
+              type="button"
               onClick={() => {
                 setEditedContent(message.content);
                 setIsEditing(true);
@@ -90,7 +114,10 @@ function Message({ message, onEdit, onDelete }: MessageProps) {
               Edit
             </button>
 
-            <button onClick={() => onDelete(message.id)}>
+            <button
+              type="button"
+              onClick={() => onDelete(message.id)}
+            >
               Delete
             </button>
           </div>
