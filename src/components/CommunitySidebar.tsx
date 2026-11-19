@@ -1,4 +1,5 @@
 
+import { useEffect, useRef, useState } from "react";
 import type { Community } from "../types/Community";
 
 type CommunitySidebarProps = {
@@ -8,40 +9,117 @@ type CommunitySidebarProps = {
   communities: Community[];
   activeCommunityId: string;
   onCommunitySelect: (communityId: string) => void;
+  onEditCommunity: (communityId: string) => void;
+  onDeleteCommunity: (communityId: string) => void;
 };
 
 function CommunitySidebar({
   theme,
   onToggleTheme,
+  onCreateCommunity,
   communities,
   activeCommunityId,
   onCommunitySelect,
-  onCreateCommunity,
+  onEditCommunity,
+  onDeleteCommunity,
 }: CommunitySidebarProps) {
+  const [menuCommunityId, setMenuCommunityId] =
+    useState<string | null>(null);
+
+  const menuRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    if (!menuCommunityId) return;
+
+    const handleOutsideClick = (event: MouseEvent) => {
+      if (
+        menuRef.current &&
+        !menuRef.current.contains(event.target as Node)
+      ) {
+        setMenuCommunityId(null);
+      }
+    };
+
+    const handleEscape = (event: KeyboardEvent) => {
+      if (event.key === "Escape") {
+        setMenuCommunityId(null);
+      }
+    };
+
+    document.addEventListener("mousedown", handleOutsideClick);
+    document.addEventListener("keydown", handleEscape);
+
+    return () => {
+      document.removeEventListener("mousedown", handleOutsideClick);
+      document.removeEventListener("keydown", handleEscape);
+    };
+  }, [menuCommunityId]);
+
   return (
     <aside className="community-rail">
-      {/* Nook brand */}
       <div className="brand-icon">n.</div>
 
-      {/* Community list */}
       {communities.map((community) => (
-        <button
+        <div
           key={community.id}
-          type="button"
-          className={`community-icon ${
-            activeCommunityId === community.id ? "active" : ""
-          }`}
-          onClick={() => onCommunitySelect(community.id)}
-          title={community.name}
-          aria-label={`Open ${community.name}`}
-          aria-pressed={activeCommunityId === community.id}
+          className="community-item-wrapper"
+          ref={
+            menuCommunityId === community.id
+              ? menuRef
+              : undefined
+          }
         >
-          {community.icon}
-        </button>
+          <button
+            type="button"
+            className={`community-icon ${
+              activeCommunityId === community.id
+                ? "active"
+                : ""
+            }`}
+            onClick={() => {
+              setMenuCommunityId(null);
+              onCommunitySelect(community.id);
+            }}
+            onContextMenu={(event) => {
+              event.preventDefault();
+              setMenuCommunityId(community.id);
+            }}
+            title={community.name}
+            aria-label={`Open ${community.name}`}
+            aria-pressed={
+              activeCommunityId === community.id
+            }
+          >
+            {community.icon}
+          </button>
+
+          {menuCommunityId === community.id && (
+            <div className="community-context-menu">
+              <button
+                type="button"
+                onClick={() => {
+                  setMenuCommunityId(null);
+                  onEditCommunity(community.id);
+                }}
+              >
+                Edit community
+              </button>
+
+              <button
+                type="button"
+                className="danger"
+                onClick={() => {
+                  setMenuCommunityId(null);
+                  onDeleteCommunity(community.id);
+                }}
+              >
+                Delete community
+              </button>
+            </div>
+          )}
+        </div>
       ))}
 
-      {/* Create community button - coming later */}
-      
       <button
         className="community-icon"
         type="button"
@@ -52,10 +130,8 @@ function CommunitySidebar({
         +
       </button>
 
-
       <div className="rail-spacer" />
 
-      {/* Theme toggle */}
       <button
         className="community-icon"
         type="button"
